@@ -1,11 +1,18 @@
 # Compiled class file
 *.class
+target/
+dependency-reduced-pom.xml
 
 # Log file
 *.log
 
-# BlueJ files
+# IDE files
 *.ctxt
+*.iml
+.idea/
+
+# Other
+config.yml
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
