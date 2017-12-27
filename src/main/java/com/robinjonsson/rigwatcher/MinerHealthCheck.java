@@ -33,6 +33,7 @@ public class MinerHealthCheck implements Runnable {
     private final List<String> recipients = new ArrayList<>();
 
     private Instant lastHealthy;
+    private Instant lastPoolResponse;
     private boolean reminderAlertSent;
     private HealthResult lastResult;
 
@@ -41,6 +42,7 @@ public class MinerHealthCheck implements Runnable {
         final RigWatcherConfig config
     ) {
         this.lastHealthy = Instant.now();
+        this.lastPoolResponse = Instant.now();
         this.recipients.addAll(config.getAlertNbrs());
         this.etherpoolTarget = new JerseyClientBuilder(environment)
             .build("EthermineClient")
@@ -73,8 +75,7 @@ public class MinerHealthCheck implements Runnable {
             reminderAlertSent = false;
         }
 
-        final Instant threeHoursAgo = Instant.now().minus(3, ChronoUnit.HOURS);
-        if (lastHealthy.isBefore(threeHoursAgo) && !reminderAlertSent) {
+        if (timeHasPassedSince(lastHealthy, 180) && !reminderAlertSent) {
             sendAlerts("URGENT! Unhealthy rig status for more than 3 hours! Please take a look");
             reminderAlertSent = true;
         }
@@ -94,16 +95,22 @@ public class MinerHealthCheck implements Runnable {
         }
     }
 
-    public HealthResult getHealth() {
+    private HealthResult getHealth() {
         try {
             final Statistics stats = getStats();
+            this.lastPoolResponse = Instant.now();
+
             return examineStats(stats);
         } catch (final Exception e) {
-            return new HealthResult(
-                null,
-                API_ERROR,
-                "URGENT! Failed to query for statistics. Message: " + e.getMessage()
-            );
+            if (timeHasPassedSince(lastPoolResponse, 30)) {
+                return new HealthResult(
+                    null,
+                    API_ERROR,
+                    "URGENT! No statistics found for the last 30 minutes. Pool might be down. Message: "
+                        + e.getMessage()
+                );
+            }
+            return lastResult;
         }
     }
 
@@ -161,6 +168,11 @@ public class MinerHealthCheck implements Runnable {
             "OK! Status is back to normal. Outage duration: "
                 + DurationFormatUtils.formatDurationHMS(sinceLastHealthy.toMillis())
         );
+    }
+
+    private boolean timeHasPassedSince(final Instant since, final long minutes) {
+        final Instant offset = Instant.now().minus(minutes, ChronoUnit.MINUTES);
+        return since.isBefore(offset);
     }
 
     public Statistics getStats() {
