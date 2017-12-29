@@ -1,9 +1,7 @@
 package com.robinjonsson.rigwatcher;
 
-import static com.robinjonsson.rigwatcher.HealthResult.Health.ALMOST_NO_HASHRATE;
 import static com.robinjonsson.rigwatcher.HealthResult.Health.API_ERROR;
 import static com.robinjonsson.rigwatcher.HealthResult.Health.HIGH_STALES;
-import static com.robinjonsson.rigwatcher.HealthResult.Health.LOW_CURRENT_HASHRATE;
 import static com.robinjonsson.rigwatcher.HealthResult.Health.LOW_REPORTED_HASHRATE;
 import static com.robinjonsson.rigwatcher.HealthResult.Health.MISSING_IN_ACTION;
 import static com.robinjonsson.rigwatcher.HealthResult.Health.OK;
@@ -115,11 +113,12 @@ public class MinerHealthCheck implements Runnable {
     }
 
     private HealthResult examineStats(final Statistics stats) {
-        if (stats.getActiveWorkers() == 0) {
+        if (stats.getActiveWorkers() == 0 || stats.getReportedHashrate() < 1_000L) {
             return new HealthResult(
                 stats.getLastSeen(),
                 MISSING_IN_ACTION,
-                "URGENT! 0 active workers reported! We might be offline!"
+                "URGENT! We might be offline! Reported hashrate (MH/s): "
+                    + round(stats.getReportedHashrate()) + ". Active workers: " + stats.getActiveWorkers()
             );
         }
 
@@ -132,30 +131,12 @@ public class MinerHealthCheck implements Runnable {
             );
         }
 
-        if (stats.getReportedHashrate() < 125_000_000L) {
-            return new HealthResult(
-                stats.getLastSeen(),
-                ALMOST_NO_HASHRATE,
-                "URGENT! Reported hashrate below 50% of regular value! Reported hashrate (MH/s): " +
-                    round(stats.getReportedHashrate() / 1_000_000L)
-            );
-        }
-
         if (stats.getReportedHashrate() < 230_000_000L) {
             return new HealthResult(
                 stats.getLastSeen(),
                 LOW_REPORTED_HASHRATE,
                 "Warning! Reported hashrate is below 230MH/s. Reported hashrate (MH/s): " +
                     round(stats.getReportedHashrate() / 1_000_000)
-            );
-        }
-
-        if (stats.getCurrentHashrate() < 190_000_000L) {
-            return new HealthResult(
-                stats.getLastSeen(),
-                LOW_CURRENT_HASHRATE,
-                "Warning! Average (Last 60min) hashrate is below 190MH/s. Current hashrate (MH/s): " +
-                    round(stats.getCurrentHashrate() / 1_000_000)
             );
         }
 

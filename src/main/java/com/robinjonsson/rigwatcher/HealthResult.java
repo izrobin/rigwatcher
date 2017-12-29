@@ -34,9 +34,7 @@ public class HealthResult {
         API_ERROR,
         MISSING_IN_ACTION,
         HIGH_STALES,
-        ALMOST_NO_HASHRATE,
         LOW_REPORTED_HASHRATE,
-        LOW_CURRENT_HASHRATE,
         OK;
     }
 
