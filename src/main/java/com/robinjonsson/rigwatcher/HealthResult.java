@@ -5,16 +5,16 @@ import java.time.Instant;
 public class HealthResult {
 
     private final Instant lastSeen;
-    private final Health health;
+    private final boolean ok;
     private final String message;
 
     public HealthResult(
         final Instant lastSeen,
-        final Health health,
+        final boolean ok,
         final String message
     ) {
         this.lastSeen = lastSeen;
-        this.health = health;
+        this.ok = ok;
         this.message = message;
     }
 
@@ -22,27 +22,19 @@ public class HealthResult {
         return lastSeen;
     }
 
-    public Health getHealth() {
-        return health;
+    public boolean isOk() {
+        return ok;
     }
 
     public String getMessage() {
         return message;
     }
 
-    public enum Health {
-        API_ERROR,
-        MISSING_IN_ACTION,
-        HIGH_STALES,
-        LOW_REPORTED_HASHRATE,
-        OK;
-    }
-
     @Override
     public String toString() {
         return "HealthResult{" +
             "lastSeen=" + lastSeen +
-            ", health=" + health +
+            ", ok=" + ok +
             ", message='" + message + '\'' +
             '}';
     }

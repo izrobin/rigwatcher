@@ -1,11 +1,5 @@
 package com.robinjonsson.rigwatcher;
 
-import static com.robinjonsson.rigwatcher.HealthResult.Health.API_ERROR;
-import static com.robinjonsson.rigwatcher.HealthResult.Health.HIGH_STALES;
-import static com.robinjonsson.rigwatcher.HealthResult.Health.LOW_REPORTED_HASHRATE;
-import static com.robinjonsson.rigwatcher.HealthResult.Health.MISSING_IN_ACTION;
-import static com.robinjonsson.rigwatcher.HealthResult.Health.OK;
-
 import com.robinjonsson.rigwatcher.dto.EtherpoolMinerStatsWrapper;
 import com.robinjonsson.rigwatcher.dto.EtherpoolMinerStatsWrapper.Statistics;
 import com.twilio.rest.api.v2010.account.Message;
@@ -63,12 +57,12 @@ public class MinerHealthCheck implements Runnable {
         }
 
         //Change in health status! Send alerts
-        if (health.getHealth() != lastResult.getHealth()) {
+        if (health.isOk() != lastResult.isOk()) {
             sendAlerts(health.getMessage());
         }
 
         //We're feeling OK. Let's update our self
-        if (HealthResult.Health.OK == health.getHealth()) {
+        if (health.isOk()) {
             lastHealthy = Instant.now();
             reminderAlertSent = false;
         }
@@ -103,7 +97,7 @@ public class MinerHealthCheck implements Runnable {
             if (timeHasPassedSince(lastPoolResponse, 30)) {
                 return new HealthResult(
                     null,
-                    API_ERROR,
+                    false,
                     "URGENT! No statistics found for the last 30 minutes. Pool might be down. Message: "
                         + e.getMessage()
                 );
@@ -116,7 +110,7 @@ public class MinerHealthCheck implements Runnable {
         if (stats.getActiveWorkers() == 0 || stats.getReportedHashrate() < 1_000L) {
             return new HealthResult(
                 stats.getLastSeen(),
-                MISSING_IN_ACTION,
+                false,
                 "URGENT! We might be offline! Reported hashrate (MH/s): "
                     + round(stats.getReportedHashrate()) + ". Active workers: " + stats.getActiveWorkers()
             );
@@ -125,7 +119,7 @@ public class MinerHealthCheck implements Runnable {
         if (stats.stalesPercentage() > 0.10d) {
             return new HealthResult(
                 stats.getLastSeen(),
-                HIGH_STALES,
+                false,
                 "Warning! High % of stale shares. Stales percentage: " +
                     round(stats.stalesPercentage())
             );
@@ -134,7 +128,7 @@ public class MinerHealthCheck implements Runnable {
         if (stats.getReportedHashrate() < 230_000_000L) {
             return new HealthResult(
                 stats.getLastSeen(),
-                LOW_REPORTED_HASHRATE,
+                false,
                 "Warning! Reported hashrate is below 230MH/s. Reported hashrate (MH/s): " +
                     round(stats.getReportedHashrate() / 1_000_000)
             );
@@ -145,7 +139,7 @@ public class MinerHealthCheck implements Runnable {
 
         return new HealthResult(
             stats.getLastSeen(),
-            OK,
+            true,
             "OK! Status is back to normal. Outage duration: "
                 + DurationFormatUtils.formatDurationHMS(sinceLastHealthy.toMillis())
         );
