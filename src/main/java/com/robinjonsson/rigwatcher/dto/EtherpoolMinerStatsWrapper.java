@@ -2,6 +2,8 @@ package com.robinjonsson.rigwatcher.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 
 public class EtherpoolMinerStatsWrapper {
@@ -68,12 +70,18 @@ public class EtherpoolMinerStatsWrapper {
             return activeWorkers;
         }
 
-        public double stalesPercentage() {
-            if (invalidShares == 0) {
-                return 0;
-            }
+        public int stalesPercentage() {
             final int totalShares = staleShares + validShares + invalidShares;
-            return staleShares / invalidShares;
+            if (totalShares > 0) {
+                final BigDecimal percentage = BigDecimal.valueOf(staleShares).divide(
+                    BigDecimal.valueOf(totalShares), 2, RoundingMode.UP
+                );
+                return percentage
+                    .multiply(BigDecimal.valueOf(100))
+                    .setScale(0, RoundingMode.UP)
+                    .intValue();
+            }
+            return 0;
         }
     }
 

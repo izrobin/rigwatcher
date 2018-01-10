@@ -116,12 +116,11 @@ public class MinerHealthCheck implements Runnable {
             );
         }
 
-        if (stats.stalesPercentage() > 0.10d) {
+        if (stats.stalesPercentage() > 12) {
             return new HealthResult(
                 stats.getLastSeen(),
                 false,
-                "Warning! High % of stale shares. Stales percentage: " +
-                    round(stats.stalesPercentage())
+                "Warning! High % of stale shares. Stales last hour: " + stats.stalesPercentage() + "%"
             );
         }
 
